@@ -91,12 +91,11 @@ instance Seq [] where
         let
             contraccion = contr f s
             (redu, t) = scanS f b contraccion
-        in (algoFunc redu (length s), t)
+        in (algoFunc redu (length s) 0, t)
         where
-            algoFunc redu 0 = []
-            algoFunc redu i | even i        = nthS redu ((div i 2) - 1) : (algoFunc redu (i-1)) 
-                            | otherwise     = f (nthS redu (div i 2)) (nthS s (i-1)) : (algoFunc redu (i-1))
-
+            algoFunc redu n i   | i == n        = []
+                                | even i        = nthS redu (div i 2) : (algoFunc redu n (i+1)) 
+                                | otherwise     = f (nthS redu (div i 2)) (nthS s (i-1)) : (algoFunc redu n (i+1))
 
 {- ===== AUX ===== -}
 contr :: (a -> a -> a) -> [a] -> [a]
