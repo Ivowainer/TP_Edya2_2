@@ -1,5 +1,5 @@
 module ListSeq where
-    
+
 import Seq
 import Par
 
@@ -11,7 +11,8 @@ instance Seq [] where
     singletonS a = [a]
 
     lengthS :: [a] -> Int
-    lengthS = length
+    lengthS [] = 0
+    lengthS (x : xs) = 1 + lengthS xs
 
     nthS :: [a] -> Int -> a
     nthS xs i = xs !! i
@@ -36,7 +37,8 @@ instance Seq [] where
                          in if b then x : ys else ys
 
     appendS :: [a] -> [a] -> [a]
-    appendS = (++)
+    appendS [] ys = ys
+    appendS (x : xs) ys = x : (appendS xs ys)
 
     {- TODO: CONSULTA: PREGUNTAR A LA CATEDRA SI TAKES = TAKE ES VALIDO, DROPS = DROP ES VALIDO, ETC-}
     takeS :: [a] -> Int -> [a]
@@ -72,20 +74,28 @@ instance Seq [] where
 
     joinS :: [[a]] -> [a]
     joinS [] = []
-    joinS (xs : xss) = xs ++ joinS xss
+    joinS (xs : xss) = appendS xs (joinS xss)
 
     reduceS :: (a -> a -> a) -> a -> [a] -> a
-    reduceS _ e [] = e
-    reduceS f e (x : xs) = f x (reduceS f e xs)
+    reduceS _ b [] = b
+    reduceS f b [x] = f b x
+    reduceS f b xs = 
+        let 
+            contraccion = contr f xs
+        in reduceS f b contraccion
 
     scanS :: (a -> a -> a) -> a -> [a] -> ([a], a)
     scanS _ b [] = ([b], b)
-    scanS f b xs = 
+    scanS f b [x] = ([b], f b x)
+    scanS f b s =
         let
-            s = zip xs [0..(div (length xs) 2)]
-            s' = zip (contr f xs) [0..(div (length xs) 2)]
-
-        in scanS 
+            contraccion = contr f s
+            (redu, t) = scanS f b contraccion
+        in (algoFunc redu (length s), t)
+        where
+            algoFunc redu 0 = []
+            algoFunc redu i | even i        = nthS redu ((div i 2) - 1) : (algoFunc redu (i-1)) 
+                            | otherwise     = f (nthS redu (div i 2)) (nthS s (i-1)) : (algoFunc redu (i-1))
 
 
 {- ===== AUX ===== -}
