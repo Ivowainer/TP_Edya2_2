@@ -31,6 +31,10 @@ instance Seq [] where
     mapS f (x : xs) = let (y, ys) = f x ||| mapS f xs 
                       in y : ys
 
+    --- Costo: O( Sum[i=0->|s|-1] W(f s[i]) ) -> Para cada elemento aplicamos f
+    --- Profundidad: O(|s| + max[i=0->|s|-1] S(f s[i])) -> La profundidad base es |s|, 
+    --- luego en el peor caso puede darse que la maxima profundidad de f se de 
+    --- en el caso base; las sumamos
     filterS :: (a -> Bool) -> [a] -> [a]
     filterS f [] = []
     filterS f (x : xs) = let (b, ys) = f x ||| filterS f xs
@@ -76,6 +80,12 @@ instance Seq [] where
     joinS [] = []
     joinS (xs : xss) = appendS xs (joinS xss)
 
+    --- Costo: en cada llamada recursiva, calculamos una contracción (W(conts f xs)) y aplicamos
+    --- reduceS a esa contracción (|s|/2). Luego, tenemos lg |s| llamadas recursivas.
+    --- En el caso base debemos aplicar f a la base y x
+    --- O( Sum[i=0->lg |s|] W(contr f s) + W(f b x) )
+    --- Profundidad: la paralelización ocurre exclusivamente en contr
+    --- O( lg |s| * max[s' en s]{S(contr f s')} ) 
     reduceS :: (a -> a -> a) -> a -> [a] -> a
     reduceS _ b [] = b
     reduceS f b [x] = f b x
@@ -84,6 +94,10 @@ instance Seq [] where
             contraccion = contr f xs
         in reduceS f b contraccion
 
+    --- Costo: hacemos lg|s| llamadas a contr y luego lg|s| llamadas a algoFunc
+    --- O(max{lg|s|*W(contr), lg|s|*|s|^2)
+    --- Profundidad: la paralelización ocurre estrictamente dentro de algoFunc y contr
+    --- O(max{lg|s|*S(contr), lg|s|*|s|})
     scanS :: (a -> a -> a) -> a -> [a] -> ([a], a)
     scanS _ b [] = ([b], b)
     scanS f b [x] = ([b], f x b)
@@ -93,6 +107,10 @@ instance Seq [] where
             (redu, t) = scanS f b contraccion
         in (algoFunc redu (length s) 0, t)
         where
+            --- Costo: nthS es O(|s|) y llamamos a nthS en cada una de las n iteraciones -> 
+            --- O( |s|^2 )
+            --- Produndidad: parelizamos nthS (O(|s|) y algoFunc (O(|s|))
+            --- O( |s| )
             algoFunc redu n i   | i == n        = []
                                 | even i        = 
                                     let (e, l) = nthS redu (div i 2) ||| (algoFunc redu n (i+1))
@@ -104,6 +122,10 @@ instance Seq [] where
                                     in e : l
 
 {- ===== AUX ===== -}
+    --- Costo: O( Sum[i=0->|s|-1] W(f s[i]) ) -> Para cada elemento aplicamos f
+    --- Profundidad: O(|s| + max[i=0->|s|-1] S(f s[i])) -> La profundidad base es |s|, 
+    --- luego en el peor caso puede darse que la maxima profundidad de f se de 
+    --- en el caso base; las sumamos
 contr :: (a -> a -> a) -> [a] -> [a]
 contr f [] = []
 contr f [x] = [x]
