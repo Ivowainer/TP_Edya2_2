@@ -121,6 +121,9 @@ instance Seq [] where
                                         (e, l) = f r1 r2 ||| (algoFunc redu n (i+1))
                                     in e : l
 
+    fromList :: [a] -> [a]
+    fromList xs = xs
+
 {- ===== AUX ===== -}
     --- Costo: O( Sum[i=0->|s|-1] W(f s[i]) ) -> Para cada elemento aplicamos f
     --- Profundidad: O(|s| + max[i=0->|s|-1] S(f s[i])) -> La profundidad base es |s|, 
