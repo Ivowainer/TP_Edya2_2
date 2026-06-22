@@ -66,34 +66,43 @@ instance Seq A.Arr where
     joinS :: A.Arr (A.Arr a) -> A.Arr a
     joinS = A.flatten
 
-    -- reduceS :: (a -> a -> a) -> a -> A.Arr a -> a
-    -- scanS :: (a -> a -> a) -> a -> A.Arr a -> (A.Arr a, a)
+    -- Queda en costo O(n) ya que cada llamada a contr se hace con la mitad de elementos
+    -- Luego n+n/2+n/4+... = 2n
+    reduceS :: (a -> a -> a) -> a -> A.Arr a -> a
+    reduceS f b xs 
+        | A.length xs == 0 = b
+        | A.length xs == 1 = f b (xs ! 0)
+        | otherwise = 
+            let contraccion = contr f xs
+            in reduceS f b contraccion
+
+    scanS :: (a -> a -> a) -> a -> A.Arr a -> (A.Arr a, a)
+    scanS f b arr 
+        | A.length arr == 0 = (singletnS b, b)
+        | A.length arr == 1 = (singletonS b, f (arr ! 0) b)
+        | otherwise = 
+            let contrArr = contr f arr
+                (prefixContr, total) = scanS f b contrArr
+                expanded = A.tabulate (\i ->
+                            if even i
+                            -- Si i es par, está en el array contraido en la posición i/2
+                            then prefixContr ! (i `div` 2)
+                            -- Si i es impar, tenemos que calcular la expansión con contrArr[i/2] y arr[i-1]
+                            else f (prefixContr ! (i `div` 2)) (arr ! (i-1))
+                            ) (A.length arr)
+            in (expanded, total)
     
     fromList :: [a] -> A.Arr a
     fromList = A.fromList
 
 {- ===== AUX ===== -}
 contr :: (a -> a -> a) -> A.Arr a -> A.Arr a
-contr f arr 
-    | A.length arr == 0 = A.empty
-    | A.length arr == 1 = singletonS (nthS arr 0)
-    | A.length arr == 2 = singletonS (f (nthS arr 0) (nthS arr 1))
-    | otherwise        = 
-        let
-            idx = 2 ^ ilg (A.length arr - 1)
-            (contraction, list) = contr f (takeS arr 2) ||| contr f (dropS arr 2)
-        in  appendS contraction list
-
--- contr :: (a -> a -> a) -> A.Arr a -> A.Arr a
--- contr f arr 
---     | A.length arr == 0 = A.empty
---     | A.length arr == 1 = singletonS (nthS arr 0)
---     | A.length arr == 2 = singletonS (f (nthS arr 0) (nthS arr 1))
---     | otherwise        = 
---         let
---             idx = 2 ^ ilg (A.length arr - 1)
---             (l, r) = contr f (takeS arr idx) ||| contr f (dropS arr idx)
---         in  appendS l r
+contr f arr = 
+    let l = A.length arr
+        g = (\i->f (arr ! 2*i) (arr ! (2*i+1)))
+    in  if even l 
+        then A.tabulate g (l `div` 2)
+        else appendS (A.tabulate g (l `div` 2)) (singletonS (arr ! (l-1)))
 
 -- Costo: O(1)
 ilg :: Int -> Int
