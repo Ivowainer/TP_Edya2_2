@@ -28,7 +28,8 @@ instance Seq A.Arr where
         | lengthS s == 1 = singletonS (f (nthS s 0))
         | otherwise = 
             let
-                (l, r) = A.subArray 0 (div (lengthS s) 2) s ||| A.subArray (div (lengthS s) 2 + 1) (lengthS s) s 
+                m = div (lengthS s) 2
+                (l, r) = A.subArray 0 m s ||| A.subArray m (lengthS s - m) s 
                 (ml, mr) = mapS f l ||| mapS f r
             in A.flatten (A.fromList [ml, mr])
 
@@ -38,7 +39,8 @@ instance Seq A.Arr where
         | lengthS s == 1 = if f (nthS s 0) then singletonS (nthS s 0) else emptyS 
         | otherwise = 
             let
-                (l, r) = A.subArray 0 (div (lengthS s) 2) s ||| A.subArray (div (lengthS s) 2 + 1) (lengthS s) s 
+                m = div (lengthS s) 2
+                (l, r) = A.subArray 0 m s ||| A.subArray m (lengthS s - m) s
                 (ml, mr) = filterS f l ||| filterS f r
             in A.flatten (A.fromList [ml, mr])
 
@@ -78,7 +80,7 @@ instance Seq A.Arr where
 
     scanS :: (a -> a -> a) -> a -> A.Arr a -> (A.Arr a, a)
     scanS f b arr 
-        | A.length arr == 0 = (singletnS b, b)
+        | A.length arr == 0 = (emptyS, b)
         | A.length arr == 1 = (singletonS b, f (arr ! 0) b)
         | otherwise = 
             let contrArr = contr f arr
@@ -99,7 +101,7 @@ instance Seq A.Arr where
 contr :: (a -> a -> a) -> A.Arr a -> A.Arr a
 contr f arr = 
     let l = A.length arr
-        g = (\i->f (arr ! 2*i) (arr ! (2*i+1)))
+        g = (\i->f (arr ! (2*i)) (arr ! (2*i+1)))
     in  if even l 
         then A.tabulate g (l `div` 2)
         else appendS (A.tabulate g (l `div` 2)) (singletonS (arr ! (l-1)))

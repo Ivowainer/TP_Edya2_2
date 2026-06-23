@@ -44,7 +44,6 @@ instance Seq [] where
     appendS [] ys = ys
     appendS (x : xs) ys = x : (appendS xs ys)
 
-    {- TODO: CONSULTA: PREGUNTAR A LA CATEDRA SI TAKES = TAKE ES VALIDO, DROPS = DROP ES VALIDO, ETC-}
     takeS :: [a] -> Int -> [a]
     takeS [] _ = []
     takeS _ 0 = []
@@ -99,7 +98,7 @@ instance Seq [] where
     --- Profundidad: la paralelización ocurre estrictamente dentro de algoFunc y contr
     --- O(max{lg|s|*S(contr), lg|s|*|s|})
     scanS :: (a -> a -> a) -> a -> [a] -> ([a], a)
-    scanS _ b [] = ([b], b)
+    scanS _ b [] = ([], b)
     scanS f b [x] = ([b], f x b)
     scanS f b s =
         let
